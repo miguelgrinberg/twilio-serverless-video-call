@@ -10,7 +10,7 @@ const playStream = async () => {
     playerDiv.innerHTML = 'Not currently streaming.';
   }
   else {
-    player = await Twilio.Player.connect(data.token, {playerWasmAssetsPath: ''});
+    player = await Twilio.Live.Player.connect(data.token, {playerWasmAssetsPath: ''});
     player.play();
     playerDiv.appendChild(player.videoElement);
 

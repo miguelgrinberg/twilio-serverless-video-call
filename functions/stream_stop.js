@@ -1,31 +1,26 @@
-const axios = require('axios');
+const twilio = require('twilio');
 
 exports.handler = async function(context, event, callback) {
-  const auth = { username: context.API_KEY_SID, password: context.API_KEY_SECRET };
+  const client = context.getTwilioClient();
 
   // get first active media processor
-  let response = await axios.get(
-    'https://media.twilio.com/v1/MediaProcessors?Status=STARTED',
-    { auth: auth },
-  );
-  const mediaProcessor = response.data['media_processors'][0];
+  const mediaProcessor = (await client.media.mediaProcessor.list({
+    status: 'started',
+    limit: 1,
+  }))[0];
   console.log(mediaProcessor);
-  const playerStreamerSid = JSON.parse(mediaProcessor.extension_context).outputs[0];
+  const playerStreamerSid = JSON.parse(mediaProcessor.extensionContext).outputs[0];
   console.log(playerStreamerSid);
 
   // stop the media processor
-  await axios.post(
-    `https://media.twilio.com/v1/MediaProcessors/${mediaProcessor.sid}`,
-    new URLSearchParams({Status: 'ENDED'}).toString(),
-    { auth: auth },
-  );
+  await client.media.mediaProcessor(mediaProcessor.sid).update({
+    status: 'ENDED',
+  });
 
   // stop the player streamer
-  await axios.post(
-    `https://media.twilio.com/v1/PlayerStreamers/${playerStreamerSid}`,
-    new URLSearchParams({Status: 'ENDED'}).toString(),
-    { auth: auth },
-  );
+  await client.media.playerStreamer(playerStreamerSid).update({
+    status: 'ENDED',
+  });
 
   // return a success response
   return callback();

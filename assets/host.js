@@ -3,10 +3,11 @@ const liveMessage = document.getElementById('liveMessage');
 const offlineMessage = document.getElementById('offlineMessage');
 let tracks;
 let room;
+let password;
 
 const start = async () => {
   // prompt for the host password
-  const password = prompt('Enter the password');
+  password = prompt('Enter the password');
 
   // get an access token
   const response = await fetch('/host_token', {
@@ -53,6 +54,7 @@ const start = async () => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
+      password: password,
       room: data.room
     }),
   });
@@ -66,6 +68,12 @@ const stop = async () => {
   // stop the live stream
   await fetch('/stream_stop', {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      password: password,
+    }),
   });
 
   // leave the video room

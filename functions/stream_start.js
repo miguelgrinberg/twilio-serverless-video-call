@@ -1,6 +1,14 @@
 const twilio = require('twilio');
 
 exports.handler = async function(context, event, callback) {
+  //authentication
+  if (event.password != context.HOST_PASSWORD) {
+    const response = new Twilio.Response();
+    response.setStatusCode(401);
+    response.setBody('Invalid password');
+    return callback(null, response);
+  }
+
   const client = context.getTwilioClient();
 
   // create a player streamer

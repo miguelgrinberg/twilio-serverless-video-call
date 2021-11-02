@@ -3,7 +3,8 @@ const twilio = require('twilio');
 exports.handler = async function(context, event, callback) {
   const room_name = 'livestream-' + Math.random().toString(16).substring(2)
 
-  if (event.password != 'twilio') {
+  // authentication
+  if (event.password != context.HOST_PASSWORD) {
     const response = new Twilio.Response();
     response.setStatusCode(401);
     response.setBody('Invalid password');

@@ -1,25 +1,27 @@
 const twilio = require('twilio');
 
 exports.handler = async function(context, event, callback) {
-  const room_name = 'livestream-' + Math.random().toString(16).substring(2)
+  const room_name = 'my-video-room';
 
-  // authentication
-  if (event.password != context.HOST_PASSWORD) {
-    const response = new Twilio.Response();
-    response.setStatusCode(401);
-    response.setBody('Invalid password');
-    return callback(null, response);
+  // check that there are at most 4 participants in the room
+  try {
+    const room = await context.getTwilioClient().video.rooms(room_name).fetch();
+    const participants = await room.participants().list({status: 'connected'});
+    if (Object.keys(participants).length >= 3) {
+      return callback(null, {
+        statusCode: 400,
+        body: 'Room is full'
+      });
+    }
   }
-
-  // create the video room
-  await context.getTwilioClient().video.rooms.create({
-    uniqueName: room_name,
-    type: 'go',
-  });
+  catch (error) {
+    // the room doesn't exist yet
+    console.log(error);
+  }
 
   // create an access token
   const accessToken = new twilio.jwt.AccessToken(context.ACCOUNT_SID, context.API_KEY_SID, context.API_KEY_SECRET);
-  accessToken.identity = 'Miguel Grinberg';  // ← enter the name of the live stream host here!
+  accessToken.identity = 'Participant ' + Math.random().toString(16).substring(2, 6);
   const videoGrant = new twilio.jwt.AccessToken.VideoGrant({
     room: room_name
   });

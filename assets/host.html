@@ -6,8 +6,19 @@
           integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
           crossorigin="anonymous">
     <style>
-      html, body {
-        height: 100%;
+      #participants {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      #participants div {
+        width: 320px;
+        height: 240px;
+        margin: 5px;
+        border: 1px solid black;
+      }
+      #participants div video {
+        width: 320px;
+        height: 240px;
       }
       #liveMessage {
         display: none;
@@ -15,14 +26,16 @@
     </style>
   </head>
   <body>
-    <div class="container">
-      <div class="position-absolute top-50 start-50 translate-middle">
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" id="liveSwitch">
-          <label class="form-check-label" for="liveSwitch">
+    <div class="container-fluid">
+      <div>
+        <div class="form-check form-switch" style="margin: 10px;">
+          <input class="form-check-input" type="checkbox" id="connectSwitch">
+          <label class="form-check-label" for="connectSwitch">
             <span id="liveMessage">You are <span class="badge bg-danger">LIVE</span></span>
             <span id="offlineMessage">You are <span class="badge bg-secondary">OFFLINE</span></span>
           </label>
+        </div>
+        <div id="participants">
         </div>
       </div>
     </div>

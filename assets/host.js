@@ -1,39 +1,15 @@
-const liveSwitch = document.getElementById('liveSwitch');
+const connectSwitch = document.getElementById('connectSwitch');
 const liveMessage = document.getElementById('liveMessage');
 const offlineMessage = document.getElementById('offlineMessage');
+const participants = document.getElementById('participants');
 let tracks;
 let room;
 let password;
 
-const start = async () => {
-  // prompt for the host password
-  password = prompt('Enter the password');
-
-  // get an access token
-  const response = await fetch('/host_token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      password: password,
-    }),
-  });
-  if (!response.ok) {
-    liveSwitch.checked = false;
-    return alert(await response.text());
-  }
-  const data = await response.json();
-
+const initializeTracks = async () => {
   // get the video track
-  const screenStream = await navigator.mediaDevices.getDisplayMedia({
-    video: {
-      width: 1280,
-      height: 720,
-    }
-  });
-  const videoTrack = new Twilio.Video.LocalVideoTrack(screenStream.getTracks()[0], {
-    name: 'screen'
+  const videoTrack = await Twilio.Video.createLocalVideoTrack({
+    name: 'video'
   });
 
   // get the audio track
@@ -41,57 +17,74 @@ const start = async () => {
     name: 'audio'
   });
 
-  // connect to the video room
   tracks = [videoTrack, audioTrack];
+
+  // show local video
+  const div = document.createElement('div');
+  div.appendChild(videoTrack.attach());
+  participants.appendChild(div);
+};
+
+const connect = async () => {
+  // get an access token
+  const response = await fetch('/host_token', {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    connectSwitch.checked = false;
+    return alert(await response.text());
+  }
+  const data = await response.json();
+  console.log(data);
+
+  // connect to the video room
   room = await Twilio.Video.connect(data.token, {
     tracks: tracks,
   });
-  
-  // start the live stream
-  await fetch('/stream_start',  {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      password: password,
-      room: data.room
-    }),
-  });
 
+  const participantConnected = participant => {
+    const div = document.createElement('div');
+    div.setAttribute('id', participant.sid);
+    participants.appendChild(div);
+
+    const trackSubscribed = track => div.appendChild(track.attach());
+    const trackUnsubscribed = track => track.detach().forEach(element => element.remove());
+
+    participant.tracks.forEach(pub => { if (pub.isSubscribed) trackSubscribed(pub.track) });
+    participant.on('trackSubscribed', track => trackSubscribed(track));
+    participant.on('trackUnsubscribed', trackUnsubscribed);
+  };
+
+  const participantDisconnected = participant => {
+    document.getElementById(participant.sid).remove();
+  };
+
+  room.participants.forEach(participantConnected);
+  room.on('participantConnected', participantConnected);
+  room.on('participantDisconnected', participantDisconnected);
+  
   // update the UI
   offlineMessage.style.display = 'none';
   liveMessage.style.display = 'inline';
 };
 
-const stop = async () => {
-  // stop the live stream
-  await fetch('/stream_stop', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      password: password,
-    }),
-  });
-
-  // leave the video room
+const disconnect = async () => {
   room.disconnect();
-  tracks[0].stop();
-  tracks[1].stop();
-  tracks = room = undefined;
 
   // update the UI
   liveMessage.style.display = 'none';
   offlineMessage.style.display = 'inline';
+  while (participants.childNodes.length > 2) {
+    participants.removeChild(participants.lastChild);
+  }
 };
 
-liveSwitch.addEventListener('click', (ev) => {
+initializeTracks();
+connectSwitch.addEventListener('click', (ev) => {
   if (ev.target.checked) {
-    start();
+    connect();
   }
   else {
-    stop();
+    disconnect();
   }
 });
